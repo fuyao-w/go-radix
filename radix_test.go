@@ -13,7 +13,7 @@ func TestInsert(t *testing.T) {
 	root.Insert("testerr", nil)
 	root.Insert("testerrr", nil)
 	t.Log(root)
-	root.Walk("", func(key string, val any) bool {
+	root.Scan("", func(key string, val any) bool {
 		t.Log(key)
 		return true
 	})
@@ -25,15 +25,17 @@ func TestInsert2(t *testing.T) {
 	root.Insert(string([]byte("test")), nil)
 	root.Insert(string([]byte("toaster")), nil)
 	root.Insert(string([]byte("toasting")), nil)
-	root.Insert(string([]byte("slow")), nil)
+	root.Insert(string([]byte("slow")), 33)
 	root.Insert(string([]byte("slowly")), nil)
 	root.Insert(string([]byte("slowly")), nil)
 	t.Log(root)
 
-	root.Walk("", func(key string, val any) bool {
+	root.Scan("", func(key string, val any) bool {
 		t.Log(key)
 		return true
 	})
+	t.Log(root.Len())
+	t.Log(root.LongestPrefix("slo"))
 }
 
 func TestMatch(t *testing.T) {
@@ -80,10 +82,11 @@ func TestBlank(t *testing.T) {
 	root.Insert("2", 1)
 	root.Insert("22", 1)
 	root.Insert("", 2)
-	root.Walk("112", func(key string, val any) bool {
+	root.Scan("112", func(key string, val any) bool {
 		t.Log(key, val)
 		return true
 	})
+	t.Log(root.Len())
 }
 
 func TestDelete(t *testing.T) {
@@ -94,6 +97,8 @@ func TestDelete(t *testing.T) {
 	root.Delete("tee")
 	root.Delete("")
 	t.Log(root)
+	t.Log(root.Len())
+	t.Log(root.Get("test"))
 }
 
 func TestDeletePrefix(t *testing.T) {
@@ -103,4 +108,5 @@ func TestDeletePrefix(t *testing.T) {
 	root.Insert("tee", 1)
 	root.DeletePrefix("te")
 	t.Log(root)
+	t.Log(root.Len())
 }
