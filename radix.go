@@ -76,7 +76,10 @@ func findEdge(s []*edge, target string) (idx int, found bool) {
 // appendEdge 追加一条边，按照 edge.prefix[0] 从小到大的位置进行插入
 func (n *node) appendEdge(e *edge) {
 	//e.parent = n
-	idx, _ := findEdge(n.successor, e.prefix)
+	idx, found := findEdge(n.successor, e.prefix)
+	if found {
+		panic("duplicate edge:" + e.prefix)
+	}
 	n.successor = append(n.successor[:idx], append([]*edge{e}, n.successor[idx:]...)...)
 }
 
@@ -95,8 +98,9 @@ func (t *Tree) insert(key string, value any) (old any, ok bool) {
 			if !curNode.isLeaf() {
 				t.count++
 				curNode.setLeaf(key, value)
-			} else {
 				ok = true
+			} else {
+
 				old = curNode.leaf.B
 			}
 			return
@@ -115,11 +119,8 @@ func (t *Tree) insert(key string, value any) (old any, ok bool) {
 		if matchIndex == 0 {
 			panic("edge not have common prefix")
 		}
-
 		oriPrefix, newPrefix := search[:matchIndex], search[matchIndex:]
-
 		search = newPrefix
-
 		if oriPrefix != curEdge.prefix { // prefix 不是 search 子串 (部分重叠)，先拆分，再确定是否增加子节点
 			//创建新的边，并且将当前边的 leaf 移动到新边
 			next := newEdge(curEdge.prefix[len(oriPrefix):], curEdge.getLeaf())
@@ -131,20 +132,17 @@ func (t *Tree) insert(key string, value any) (old any, ok bool) {
 			curEdge.delLeaf()
 			curEdge.prefix = oriPrefix
 		}
-		if len(search) > 0 {
-			curNode = curEdge.child
-		}
+		curNode = curEdge.child
 	}
 }
 
 // newEdge 创建一条新的边
 func newEdge(localPrefix string, leaf *leaf) *edge {
 	edge := &edge{prefix: localPrefix}
-	downNode := &node{
+	edge.child = &node{
 		predecessor: edge,
 		leaf:        leaf,
 	}
-	edge.child = downNode
 	return edge
 }
 
@@ -194,14 +192,12 @@ func (t *Tree) findLongestPrefixNode(prefix string) (curNode, parent *node) {
 		if !found {
 			break
 		}
-
 		curEdge := curNode.successor[idx]
 		parent = curNode
 		curNode = curEdge.child
 		if len(curEdge.prefix) >= len(search) {
 			return curNode, parent
 		}
-
 		successor = curNode.successor
 		search = search[len(curEdge.prefix):]
 	}
@@ -243,13 +239,13 @@ func (t *Tree) Delete(key string) (ok bool) {
 	if !n.isLeaf() || n.leaf.A != key {
 		return false
 	}
-
 	n.leaf = nil
-
+	n.mergeChild()
 	if parent != nil {
-		if len(n.successor) == 0 { // 如果是叶子边，可以直接删除
-			parent.deleteEdge(n.predecessor)
+		if len(n.successor) == 0 && !n.isLeaf() {
+			parent.deleteEdge(n.predecessor) // 如果是叶子边，可以直接删除
 		}
+
 		parent.mergeChild()
 	}
 	t.count--
@@ -261,10 +257,10 @@ func (n *node) deleteEdge(target *edge) {
 	if target == nil {
 		return
 	}
-	successor := n.successor
-	if len(successor) == 0 {
+	if n.predecessor == nil {
 		return
 	}
+	successor := n.successor
 	idx, ok := findEdge(successor, target.prefix)
 	if !ok {
 		return
@@ -279,16 +275,11 @@ func (t *Tree) DeletePrefix(key string) (ok bool) {
 	if n == nil {
 		return false
 	}
-
 	t.scan(n, func(key string, val any) bool {
 		delCount++
 		return true
 	})
-
-	//var parent *node
-
 	parent.deleteEdge(n.predecessor)
-
 	if parent != nil {
 		parent.mergeChild()
 	}
@@ -298,13 +289,14 @@ func (t *Tree) DeletePrefix(key string) (ok bool) {
 
 // mergeChild node 永远是 parent ，如果节点只有一条后继边，并且当前节点没有 leaf 则进行合并
 func (n *node) mergeChild() {
-	if n.isLeaf() || len(n.successor) > 1 || n.predecessor == nil {
+	if n.isLeaf() || len(n.successor) != 1 || n.predecessor == nil {
 		return
 	}
 	// 拼接前继边的公共前缀
 	n.predecessor.prefix += n.successor[0].prefix
 	// 直接继承后继的 leaf
+
 	n.leaf = n.successor[0].getLeaf()
 	// 清空后继
-	n.successor = nil
+	n.successor = n.successor[0].child.successor
 }
