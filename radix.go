@@ -100,7 +100,6 @@ func (t *Tree) insert(key string, value any) (old any, ok bool) {
 				curNode.setLeaf(key, value)
 				ok = true
 			} else {
-
 				old = curNode.leaf.B
 			}
 			return
@@ -240,6 +239,15 @@ func (t *Tree) Delete(key string) (ok bool) {
 		return false
 	}
 	n.leaf = nil
+	/*
+			删除一个节点的时候，节点合并三种情况，
+			1. 该节点是中间节点，如果后继只有一条边则将后继合并到当前节点
+			例如： a -> b -> c ，删除 b => a -> bc
+			2. 该节点是中间节点，如果后继不符合合并条件，但是该节点对于父节点来说符合合并条件，则将该节点合并到父节点中
+			例如： a-> b -> c    删除 b => ab -> c
+		                ↘  d                  ↘  d
+		    3. 该节点是叶子节点，直接从父节点中删除和该节点相连的边即可
+	*/
 	n.mergeChild()
 	if parent != nil {
 		if len(n.successor) == 0 && !n.isLeaf() {
