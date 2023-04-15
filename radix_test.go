@@ -8,7 +8,7 @@ import (
 func TestInsert(t *testing.T) {
 	tests := []struct {
 		key string
-		val any
+		val string
 	}{
 		{
 			"test", "test",
@@ -44,7 +44,7 @@ func TestInsert(t *testing.T) {
 			"222", "222",
 		},
 	}
-	root := New()
+	root := New[string]()
 	t.Run("", func(t *testing.T) {
 		for _, test := range tests {
 			root.Insert(test.key, test.val)
@@ -70,7 +70,7 @@ func TestInsert(t *testing.T) {
 func Test_Delete(t *testing.T) {
 	tests := []struct {
 		key string
-		val any
+		val string
 	}{
 		{
 			"test", "test",
@@ -110,7 +110,7 @@ func Test_Delete(t *testing.T) {
 			"222", "222",
 		},
 	}
-	root := New()
+	root := New[string]()
 	for _, test := range tests {
 		root.Insert(test.key, test.val)
 	}
@@ -130,7 +130,7 @@ func Test_Delete(t *testing.T) {
 }
 
 func TestInsert2(t *testing.T) {
-	root := New()
+	root := New[any]()
 	root.Insert(string([]byte("test")), nil)
 	root.Insert(string([]byte("toaster")), nil)
 	root.Insert(string([]byte("toasting")), nil)
@@ -157,9 +157,9 @@ func TestMatch(t *testing.T) {
 
 func TestFind(t *testing.T) {
 
-	n := &node{successor: nil}
+	n := &node[any]{successor: nil}
 	for i := 97 + 25; i >= 97; i-- {
-		n.appendEdge(newEdge(string([]byte{byte(i)}), nil))
+		n.appendEdge(newEdge[any](string([]byte{byte(i)}), nil))
 	}
 
 	//var edges = []*edge{{prefix: "1"}, {prefix: "2"}, {prefix: "3"}, {prefix: "4"}, {prefix: "5"}}
@@ -171,12 +171,12 @@ func TestFind(t *testing.T) {
 	for _, e := range n.successor {
 		t.Log(e.prefix)
 	}
-	n = &node{}
-	n.appendEdge(newEdge("4", nil))
-	n.appendEdge(newEdge("1", nil))
-	n.appendEdge(newEdge("3", nil))
-	n.appendEdge(newEdge("5", nil))
-	n.appendEdge(newEdge("2", nil))
+	n = &node[any]{}
+	n.appendEdge(newEdge[any]("4", nil))
+	n.appendEdge(newEdge[any]("1", nil))
+	n.appendEdge(newEdge[any]("3", nil))
+	n.appendEdge(newEdge[any]("5", nil))
+	n.appendEdge(newEdge[any]("2", nil))
 	for _, e := range n.successor {
 		t.Log(e.prefix)
 	}
@@ -184,7 +184,7 @@ func TestFind(t *testing.T) {
 }
 
 func TestBlank(t *testing.T) {
-	root := New()
+	root := New[int]()
 	root.Insert("1", 1)
 	root.Insert("11", 1)
 	root.Insert("111", 1)
@@ -194,7 +194,7 @@ func TestBlank(t *testing.T) {
 	root.Insert("2", 1)
 	root.Insert("22", 1)
 	root.Insert("", 2)
-	root.Scan("112", func(key string, val any) bool {
+	root.Scan("112", func(key string, val int) bool {
 		t.Log(key, val)
 		return true
 	})
@@ -202,7 +202,7 @@ func TestBlank(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	root := New()
+	root := New[int]()
 	root.Insert("test", 1)
 	root.Insert("", 1)
 	root.Insert("tee", 1)
@@ -214,7 +214,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDeletePrefix(t *testing.T) {
-	root := New()
+	root := New[int]()
 	root.Insert("1", 1)
 	root.Insert("11", 1)
 	root.Insert("111", 1)
@@ -281,11 +281,11 @@ func Test_longestPrefix(t *testing.T) {
 }
 
 func Test_findEdge(t *testing.T) {
-	newEdge := func(prefix string) *edge {
-		return newEdge(prefix, nil)
+	newEdge := func(prefix string) *edge[any] {
+		return newEdge[any](prefix, nil)
 	}
 	type args struct {
-		s      []*edge
+		s      []*edge[any]
 		target string
 	}
 	tests := []struct {
@@ -296,35 +296,35 @@ func Test_findEdge(t *testing.T) {
 	}{
 		{
 			args: args{
-				s:      []*edge{newEdge("11"), newEdge("22"), newEdge("33")},
+				s:      []*edge[any]{newEdge("11"), newEdge("22"), newEdge("33")},
 				target: "23445",
 			},
 			wantIdx:   1,
 			wantFound: true,
 		}, {
 			args: args{
-				s:      []*edge{newEdge(""), newEdge("22"), newEdge("33")},
+				s:      []*edge[any]{newEdge(""), newEdge("22"), newEdge("33")},
 				target: "5",
 			},
 			wantIdx:   3,
 			wantFound: false,
 		}, {
 			args: args{
-				s:      []*edge{newEdge("1"), newEdge("22"), newEdge("33")},
+				s:      []*edge[any]{newEdge("1"), newEdge("22"), newEdge("33")},
 				target: "-",
 			},
 			wantIdx:   0,
 			wantFound: false,
 		}, {
 			args: args{
-				s:      []*edge{newEdge("1"), newEdge("22"), newEdge("33")},
+				s:      []*edge[any]{newEdge("1"), newEdge("22"), newEdge("33")},
 				target: "223",
 			},
 			wantIdx:   1,
 			wantFound: true,
 		}, {
 			args: args{
-				s:      []*edge{newEdge("1"), newEdge("22"), newEdge("33")},
+				s:      []*edge[any]{newEdge("1"), newEdge("22"), newEdge("33")},
 				target: "3",
 			},
 			wantIdx:   2,
@@ -345,8 +345,8 @@ func Test_findEdge(t *testing.T) {
 }
 
 func Test_appendEdge(t *testing.T) {
-	e := func(prefix string) *edge {
-		return newEdge(prefix, nil)
+	e := func(prefix string) *edge[any] {
+		return newEdge[any](prefix, nil)
 	}
 
 	tests := []struct {
@@ -369,7 +369,7 @@ func Test_appendEdge(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			n := &node{}
+			n := &node[any]{}
 			for _, s := range test.slice {
 				n.appendEdge(e(s))
 			}

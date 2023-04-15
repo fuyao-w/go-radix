@@ -11,48 +11,48 @@ radix 树实现
 */
 type (
 	// node 树的节点
-	node struct {
-		predecessor *edge   // 节点的前继边
-		successor   []*edge // 节点的后继边，按 edge.prefix[0] 从小到大排序
-		leaf        *leaf   // 当前节点是否有元素
+	node[T any] struct {
+		predecessor *edge[T]          // 节点的前继边
+		successor   []*edge[T]        // 节点的后继边，按 edge.prefix[0] 从小到大排序
+		leaf        *Tuple[string, T] // 当前节点是否有元素
 	}
 	// edge 树的边
-	edge struct {
-		child  *node
+	edge[T any] struct {
+		child  *node[T]
 		prefix string // 每个边保存局部的前缀，从顶点到某一叶子节点的局部前缀组成完整的 key
 	}
 	// Tree 通过树对外提供 API
-	Tree struct {
-		root  *node
+	Tree[T any] struct {
+		root  *node[T]
 		count uint64
 	}
 	leaf Tuple[string, any]
 )
 
 // New 创建一个新的 radix 树
-func New() *Tree {
-	return &Tree{root: new(node)}
+func New[T any]() *Tree[T] {
+	return &Tree[T]{root: &node[T]{}}
 }
 
-func (e *edge) hasLeaf() bool {
+func (e *edge[T]) hasLeaf() bool {
 	return e.child.leaf != nil
 }
 
-func (e *edge) setLeaf(key string, value any) {
+func (e *edge[T]) setLeaf(key string, value any) {
 	e.child.setLeaf(key, value)
 }
-func (e *edge) delLeaf() {
+func (e *edge[T]) delLeaf() {
 	e.child.leaf = nil
 }
 
-func (e *edge) getLeaf() *leaf {
+func (e *edge[T]) getLeaf() *Tuple[string, T] {
 	return e.child.leaf
 }
-func (n *node) setLeaf(key string, value any) {
-	n.leaf = (*leaf)(Ptr(BuildTuple(key, value)))
+func (n *node[T]) setLeaf(key string, value T) {
+	n.leaf = Ptr(BuildTuple(key, value))
 }
 
-func (n *node) isLeaf() bool {
+func (n *node[T]) isLeaf() bool {
 	return n.leaf != nil
 }
 
@@ -67,28 +67,24 @@ func longestPrefix(item, target string) (idx int) {
 }
 
 // findEdge 寻找某一条边如果不存在则 found 返回 false，idx 是 target 的索引位置
-func findEdge(s []*edge, target string) (idx int, found bool) {
+func findEdge[T any](s []*edge[T], target string) (idx int, found bool) {
 	return sort.Find(len(s), func(i int) int {
 		return -strings.Compare(s[i].prefix[:1], target[0:1])
 	})
 }
 
 // appendEdge 追加一条边，按照 edge.prefix[0] 从小到大的位置进行插入
-func (n *node) appendEdge(e *edge) {
+func (n *node[T]) appendEdge(e *edge[T]) {
 	//e.parent = n
 	idx, found := findEdge(n.successor, e.prefix)
 	if found {
 		panic("duplicate edge:" + e.prefix)
 	}
-	n.successor = append(n.successor[:idx], append([]*edge{e}, n.successor[idx:]...)...)
+	n.successor = append(n.successor[:idx], append([]*edge[T]{e}, n.successor[idx:]...)...)
 }
 
 // Insert 插入元素 ok 为 false 代表跟新 ，old 返回之前的 value
-func (t *Tree) Insert(key string, value any) (old any, ok bool) {
-	return t.insert(key, value)
-}
-
-func (t *Tree) insert(key string, value any) (old any, ok bool) {
+func (t *Tree[T]) Insert(key string, value T) (old T, ok bool) {
 	curNode := t.root
 	search := key
 
@@ -107,7 +103,7 @@ func (t *Tree) insert(key string, value any) (old any, ok bool) {
 		// 如果 prefix 是 search 的完全子串，直接终止
 		idx, found := findEdge(curNode.successor, search)
 		if !found {
-			next := newEdge(search, nil)
+			next := newEdge[T](search, nil)
 			next.setLeaf(key, value)
 			curNode.appendEdge(next)
 			t.count++
@@ -123,11 +119,11 @@ func (t *Tree) insert(key string, value any) (old any, ok bool) {
 		if oriPrefix != curEdge.prefix { // prefix 不是 search 子串 (部分重叠)，先拆分，再确定是否增加子节点
 			//创建新的边，并且将当前边的 leaf 移动到新边
 			next := newEdge(curEdge.prefix[len(oriPrefix):], curEdge.getLeaf())
-			next.child.successor = append([]*edge(nil), curEdge.child.successor...)
+			next.child.successor = append([]*edge[T](nil), curEdge.child.successor...)
 			//next.parent = curEdge.child
 			// 将当前边的下游节点后继更新成 next , leaf 置空 ，更新 prefix
 			//curEdge.child = next.parent
-			curEdge.child.successor = append([]*edge(nil), next)
+			curEdge.child.successor = append([]*edge[T](nil), next)
 			curEdge.delLeaf()
 			curEdge.prefix = oriPrefix
 		}
@@ -136,9 +132,9 @@ func (t *Tree) insert(key string, value any) (old any, ok bool) {
 }
 
 // newEdge 创建一条新的边
-func newEdge(localPrefix string, leaf *leaf) *edge {
-	edge := &edge{prefix: localPrefix}
-	edge.child = &node{
+func newEdge[T any](localPrefix string, leaf *Tuple[string, T]) *edge[T] {
+	edge := &edge[T]{prefix: localPrefix}
+	edge.child = &node[T]{
 		predecessor: edge,
 		leaf:        leaf,
 	}
@@ -146,12 +142,12 @@ func newEdge(localPrefix string, leaf *leaf) *edge {
 }
 
 // scan 广度遍历节点 n，walkFn 返回 true 的时候会继续遍历，否则会停止
-func (t *Tree) scan(n *node, walkFn func(key string, val any) bool) {
+func (t *Tree[T]) scan(n *node[T], walkFn func(key string, val T) bool) {
 	if n == nil {
 		return
 	}
 	var (
-		successor, nextSuccessor []*edge
+		successor, nextSuccessor []*edge[T]
 	)
 	if n.isLeaf() { // 根节点
 		successor = append(successor, newEdge("", n.leaf))
@@ -173,13 +169,13 @@ func (t *Tree) scan(n *node, walkFn func(key string, val any) bool) {
 }
 
 // Scan 从匹配 prefix 最长前缀的节点开始遍历树，walkFn 返回 true 代表继续遍历，否则终止
-func (t *Tree) Scan(prefix string, walkFn func(key string, val any) bool) {
+func (t *Tree[T]) Scan(prefix string, walkFn func(key string, val T) bool) {
 	n, _ := t.findLongestPrefixNode(prefix)
 	t.scan(n, walkFn)
 }
 
 // findLongestPrefixNode 找到具有最长公共前缀的节点
-func (t *Tree) findLongestPrefixNode(prefix string) (curNode, parent *node) {
+func (t *Tree[T]) findLongestPrefixNode(prefix string) (curNode, parent *node[T]) {
 	curNode = t.root
 	search := prefix
 	if len(prefix) == 0 {
@@ -204,7 +200,7 @@ func (t *Tree) findLongestPrefixNode(prefix string) (curNode, parent *node) {
 }
 
 // Get 等值查找
-func (t *Tree) Get(key string) (val any, exist bool) {
+func (t *Tree[T]) Get(key string) (val T, exist bool) {
 	n, _ := t.findLongestPrefixNode(key)
 	if n.isLeaf() {
 		return n.leaf.B, true
@@ -213,12 +209,12 @@ func (t *Tree) Get(key string) (val any, exist bool) {
 }
 
 // Len 树的有效元素数量
-func (t *Tree) Len() uint64 {
+func (t *Tree[T]) Len() uint64 {
 	return t.count
 }
 
 // LongestPrefix 返回有效的最长公共前缀
-func (t *Tree) LongestPrefix(prefix string) (longestPrefix string, value interface{}, exist bool) {
+func (t *Tree[T]) LongestPrefix(prefix string) (longestPrefix string, value T, ok bool) {
 	n, _ := t.findLongestPrefixNode(prefix)
 	if n == nil {
 		return
@@ -230,7 +226,7 @@ func (t *Tree) LongestPrefix(prefix string) (longestPrefix string, value interfa
 }
 
 // Delete 等值删除
-func (t *Tree) Delete(key string) (ok bool) {
+func (t *Tree[T]) Delete(key string) (ok bool) {
 	n, parent := t.findLongestPrefixNode(key)
 	if n == nil {
 		return false
@@ -261,7 +257,7 @@ func (t *Tree) Delete(key string) (ok bool) {
 }
 
 // deleteEdge 从点前节点的后继边删除 target
-func (n *node) deleteEdge(target *edge) {
+func (n *node[T]) deleteEdge(target *edge[T]) {
 	if target == nil {
 		return
 	}
@@ -277,13 +273,13 @@ func (n *node) deleteEdge(target *edge) {
 }
 
 // DeletePrefix 删除最长公共前缀的所有有效值 ok 为 false 的时候代表没有删除任何值
-func (t *Tree) DeletePrefix(key string) (ok bool) {
+func (t *Tree[T]) DeletePrefix(key string) (ok bool) {
 	var delCount uint64
 	n, parent := t.findLongestPrefixNode(key)
 	if n == nil {
 		return false
 	}
-	t.scan(n, func(key string, val any) bool {
+	t.scan(n, func(key string, val T) bool {
 		delCount++
 		return true
 	})
@@ -296,7 +292,7 @@ func (t *Tree) DeletePrefix(key string) (ok bool) {
 }
 
 // mergeChild node 永远是 parent ，如果节点只有一条后继边，并且当前节点没有 leaf 则进行合并
-func (n *node) mergeChild() {
+func (n *node[T]) mergeChild() {
 	if n.isLeaf() || len(n.successor) != 1 || n.predecessor == nil {
 		return
 	}

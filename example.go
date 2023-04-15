@@ -1,13 +1,6 @@
-# go-radix
+package go_radix
 
-## radix 树 go 实现，支持泛型
-
-### 单测覆盖率 89.6%
-
-
-- 用例
-
-```go
+import "log"
 
 func main() {
 	tree := New[int]()
@@ -34,5 +27,3 @@ func main() {
 		return true
 	})
 }
-
-```
