@@ -12,9 +12,9 @@ radix 树实现
 type (
 	// node 树的节点
 	node[T any] struct {
-		predecessor *edge[T]          // 节点的前继边
-		successor   []*edge[T]        // 节点的后继边，按 edge.prefix[0] 从小到大排序
-		leaf        *Tuple[string, T] // 当前节点是否有元素
+		predecessor *edge[T]   // 节点的前继边
+		successor   []*edge[T] // 节点的后继边，按 edge.prefix[0] 从小到大排序
+		leaf        *leaf[T]   // 当前节点是否有元素
 	}
 	// edge 树的边
 	edge[T any] struct {
@@ -26,7 +26,7 @@ type (
 		root  *node[T]
 		count uint64
 	}
-	leaf Tuple[string, any]
+	leaf[T any] Tuple[string, T]
 )
 
 // New 创建一个新的 radix 树
@@ -45,11 +45,11 @@ func (e *edge[T]) delLeaf() {
 	e.child.leaf = nil
 }
 
-func (e *edge[T]) getLeaf() *Tuple[string, T] {
+func (e *edge[T]) getLeaf() *leaf[T] {
 	return e.child.leaf
 }
 func (n *node[T]) setLeaf(key string, value T) {
-	n.leaf = Ptr(BuildTuple(key, value))
+	n.leaf = (*leaf[T])(Ptr(BuildTuple(key, value)))
 }
 
 func (n *node[T]) isLeaf() bool {
@@ -132,7 +132,7 @@ func (t *Tree[T]) Insert(key string, value T) (old T, ok bool) {
 }
 
 // newEdge 创建一条新的边
-func newEdge[T any](localPrefix string, leaf *Tuple[string, T]) *edge[T] {
+func newEdge[T any](localPrefix string, leaf *leaf[T]) *edge[T] {
 	edge := &edge[T]{prefix: localPrefix}
 	edge.child = &node[T]{
 		predecessor: edge,
