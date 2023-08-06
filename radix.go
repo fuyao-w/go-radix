@@ -38,7 +38,7 @@ func (e *edge[T]) hasLeaf() bool {
 	return e.child.leaf != nil
 }
 
-func (e *edge[T]) setLeaf(key string, value any) {
+func (e *edge[T]) setLeaf(key string, value T) {
 	e.child.setLeaf(key, value)
 }
 func (e *edge[T]) delLeaf() {
@@ -236,13 +236,18 @@ func (t *Tree[T]) Delete(key string) (ok bool) {
 	}
 	n.leaf = nil
 	/*
-			删除一个节点的时候，节点合并三种情况，
-			1. 该节点是中间节点，如果后继只有一条边则将后继合并到当前节点
-			例如： a -> b -> c ，删除 b => a -> bc
-			2. 该节点是中间节点，如果后继不符合合并条件，但是该节点对于父节点来说符合合并条件，则将该节点合并到父节点中
-			例如： a-> b -> c    删除 b => ab -> c
-		                ↘  d                  ↘  d
-		    3. 该节点是叶子节点，直接从父节点中删除和该节点相连的边即可
+				删除一个节点的四种情况，
+				1. 该节点是中间节点，如果后继只有一条边则将后继合并到当前节点
+				例如： a -> b -> c ，删除 b => a -> bc
+				2. 该节点是中间节点，如果后继不符合合并条件，但是该节点对于父节点来说符合合并条件，则将该节点合并到父节点中
+				例如： a-> b -> c    删除 b => ab -> c
+			                ↘  d                  ↘  d
+				3. 该节点是中间节点，后继不符合合并条件，该节点对于父节点来说也不符合合并条件，则直接清楚叶子值即可
+				例如： a -> b -> c   删除 b => 结构不变
+					   ↘    ↘
+		                 x   k
+			    4. 该节点是叶子节点，直接从父节点中删除和该节点相连的边即可
+
 	*/
 	n.mergeChild()
 	if parent != nil {
