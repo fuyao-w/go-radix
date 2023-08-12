@@ -298,6 +298,7 @@ func (t *Tree[T]) DeletePrefix(key string) (ok bool) {
 
 // mergeChild node 永远是 parent ，如果节点只有一条后继边，并且当前节点没有 leaf 则进行合并
 func (n *node[T]) mergeChild() {
+	// TODO 如果该节点不是叶子节点，并且该节点没有后继，其实可以从前继的边列表中删除该节点所属的边，但是目前没有存储边的前继节点
 	if n.isLeaf() || len(n.successor) != 1 || n.predecessor == nil {
 		return
 	}
