@@ -288,6 +288,7 @@ func (t *Tree[T]) DeletePrefix(key string) (ok bool) {
 		delCount++
 		return true
 	})
+	n.successor = nil
 	parent.deleteEdge(n.predecessor)
 	if parent != nil {
 		parent.mergeChild()

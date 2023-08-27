@@ -229,6 +229,19 @@ func TestDeletePrefix(t *testing.T) {
 		t.Fatal("DeletePrefix fail")
 	}
 }
+func TestDeletePrefixV1(t *testing.T) {
+	root := New[int]()
+	root.Insert("1", 1)
+	root.Insert("11", 1)
+	root.Insert("12", 1)
+	root.Insert("13", 1)
+	root.Insert("14", 1)
+	root.DeletePrefix("1")
+	t.Log(root)
+	if root.Len() != 6 {
+		t.Fatal("DeletePrefix fail")
+	}
+}
 
 func Test_longestPrefix(t *testing.T) {
 	tests := []struct {
